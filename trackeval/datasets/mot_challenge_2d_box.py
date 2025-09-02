@@ -27,7 +27,7 @@ class MotChallenge2DBox(_BaseDataset):
             'INPUT_AS_ZIP': False,  # Whether tracker input files are zipped
             'PRINT_CONFIG': True,  # Whether to print current config
             'DO_PREPROC': True,  # Whether to perform preprocessing (never done for MOT15)
-            'TRACKER_SUB_FOLDER': 'data',  # Tracker files are in TRACKER_FOLDER/tracker_name/TRACKER_SUB_FOLDER
+            'TRACKER_SUB_FOLDER': '',  # Tracker files are in TRACKER_FOLDER/tracker_name/TRACKER_SUB_FOLDER
             'OUTPUT_SUB_FOLDER': '',  # Output files are saved in OUTPUT_FOLDER/tracker_name/OUTPUT_SUB_FOLDER
             'TRACKER_DISPLAY_NAMES': None,  # Names of trackers to display, if None: TRACKERS_TO_EVAL
             'SEQMAP_FOLDER': None,  # Where seqmaps are found (if None, GT_FOLDER/seqmaps)
@@ -68,9 +68,20 @@ class MotChallenge2DBox(_BaseDataset):
         self.output_sub_fol = self.config['OUTPUT_SUB_FOLDER']
 
         # Get classes to eval
+        """ Legacy
         self.valid_classes = ['pedestrian']
+        """
+        self.valid_classes = ['pedestrian', 
+                              'person_on_vehicle', 
+                              'car', 
+                              'bicycle', 
+                              'motorbike', 
+                              'static_person',
+                              'crowd']
+        
         self.class_list = [cls.lower() if cls.lower() in self.valid_classes else None
                            for cls in self.config['CLASSES_TO_EVAL']]
+        
         if not all(self.class_list):
             raise TrackEvalException('Attempted to evaluate an invalid class. Only pedestrian class is valid.')
         self.class_name_to_class_id = {'pedestrian': 1, 'person_on_vehicle': 2, 'car': 3, 'bicycle': 4, 'motorbike': 5,
@@ -147,12 +158,13 @@ class MotChallenge2DBox(_BaseDataset):
 
         else:
             if self.config["SEQMAP_FILE"]:
-                seqmap_file = self.config["SEQMAP_FILE"]
+                seqmap_file = self.config["SEQMAP_FILE"][0]
             else:
                 if self.config["SEQMAP_FOLDER"] is None:
                     seqmap_file = os.path.join(self.config['GT_FOLDER'], 'seqmaps', self.gt_set + '.txt')
                 else:
-                    seqmap_file = os.path.join(self.config["SEQMAP_FOLDER"], self.gt_set + '.txt')
+                    seqmap_file = os.path.join(self.config["SEQMAP_FOLDER"][0], self.gt_set + '.txt')
+
             if not os.path.isfile(seqmap_file):
                 print('no seqmap found: ' + seqmap_file)
                 raise TrackEvalException('no seqmap found: ' + os.path.basename(seqmap_file))
@@ -321,8 +333,10 @@ class MotChallenge2DBox(_BaseDataset):
         """
         # Check that input data has unique ids
         self._check_unique_ids(raw_data)
-
+        """ Legacy
         distractor_class_names = ['person_on_vehicle', 'static_person', 'distractor', 'reflection']
+        """
+        distractor_class_names = ['distractor', 'reflection', 'non_mot_vehicle']
         if self.benchmark == 'MOT20':
             distractor_class_names.append('non_mot_vehicle')
         distractor_classes = [self.class_name_to_class_id[x] for x in distractor_class_names]
@@ -389,8 +403,11 @@ class MotChallenge2DBox(_BaseDataset):
             # Remove gt detections marked as to remove (zero marked), and also remove gt detections not in pedestrian
             # class (not applicable for MOT15)
             if self.do_preproc and self.benchmark != 'MOT15':
+                print(f"\n gt_zero_marked: {gt_zero_marked} gt_classes {gt_classes}\n")
                 gt_to_keep_mask = (np.not_equal(gt_zero_marked, 0)) & \
                                   (np.equal(gt_classes, cls_id))
+                print(f"\n gt_to_keep_mask {gt_to_keep_mask}\n")
+                exit()
             else:
                 # There are no classes for MOT15
                 gt_to_keep_mask = np.not_equal(gt_zero_marked, 0)
