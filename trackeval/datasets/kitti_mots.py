@@ -126,7 +126,8 @@ class KittiMOTS(_BaseDataset):
                 if self.config["SEQMAP_FOLDER"] is None:
                     seqmap_file = os.path.join(self.config['GT_FOLDER'], seqmap_name)
                 else:
-                    seqmap_file = os.path.join(self.config["SEQMAP_FOLDER"], seqmap_name)
+                    seqmap_file = os.path.join(self.config["SEQMAP_FOLDER"][0], seqmap_name)
+            print(f"\n  seqmap_file {seqmap_file}")
             if not os.path.isfile(seqmap_file):
                 print('no seqmap found: ' + seqmap_file)
                 raise TrackEvalException('no seqmap found: ' + os.path.basename(seqmap_file))

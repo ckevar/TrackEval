@@ -28,6 +28,7 @@ class Kitti2DBox(_BaseDataset):
             'TRACKER_SUB_FOLDER': 'data',  # Tracker files are in TRACKER_FOLDER/tracker_name/TRACKER_SUB_FOLDER
             'OUTPUT_SUB_FOLDER': '',  # Output files are saved in OUTPUT_FOLDER/tracker_name/OUTPUT_SUB_FOLDER
             'TRACKER_DISPLAY_NAMES': None,  # Names of trackers to display, if None: TRACKERS_TO_EVAL
+            'SEQMAP_FOLDER': None,
         }
         return default_config
 
@@ -59,14 +60,26 @@ class Kitti2DBox(_BaseDataset):
                            for cls in self.config['CLASSES_TO_EVAL']]
         if not all(self.class_list):
             raise TrackEvalException('Attempted to evaluate an invalid class. Only classes [car, pedestrian] are valid.')
-        self.class_name_to_class_id = {'car': 1, 'van': 2, 'truck': 3, 'pedestrian': 4, 'person': 5,  # person sitting
-                                       'cyclist': 6, 'tram': 7, 'misc': 8, 'dontcare': 9, 'car_2': 1}
+        self.class_name_to_class_id = {'car': 1, 
+                                       'van': 2, 
+                                       'truck': 3, 
+                                       'pedestrian': 4, 
+                                       'person': 5,  # person sitting
+                                       'cyclist': 6, 
+                                       'tram': 7, 
+                                       'misc': 8, 
+                                       'dontcare': 9, 
+                                       'car_2': 1}
 
         # Get sequences to eval and check gt files exist
         self.seq_list = []
         self.seq_lengths = {}
         seqmap_name = 'evaluate_tracking.seqmap.' + self.config['SPLIT_TO_EVAL']
-        seqmap_file = os.path.join(self.gt_fol, seqmap_name)
+        if None == self.config['SEQMAP_FOLDER']:
+            seqmap_file = os.path.join(self.gt_fol, seqmap_name)
+        else:
+            seqmap_file = os.path.join(self.config['SEQMAP_FOLDER'][0], seqmap_name)
+        print(f"\n  seqmap_file: {seqmap_file}")
         if not os.path.isfile(seqmap_file):
             raise TrackEvalException('no seqmap found: ' + os.path.basename(seqmap_file))
         with open(seqmap_file) as fp:
@@ -288,7 +301,7 @@ class Kitti2DBox(_BaseDataset):
 
             # Only extract relevant dets for this class for preproc and eval (cls + distractor classes)
             gt_class_mask = np.sum([raw_data['gt_classes'][t] == c for c in [cls_id] + distractor_classes], axis=0)
-            gt_class_mask = gt_class_mask.astype(np.bool)
+            gt_class_mask = gt_class_mask.astype(bool)
             gt_ids = raw_data['gt_ids'][t][gt_class_mask]
             gt_dets = raw_data['gt_dets'][t][gt_class_mask]
             gt_classes = raw_data['gt_classes'][t][gt_class_mask]
@@ -296,7 +309,7 @@ class Kitti2DBox(_BaseDataset):
             gt_truncation = raw_data['gt_extras'][t]['truncation'][gt_class_mask]
 
             tracker_class_mask = np.atleast_1d(raw_data['tracker_classes'][t] == cls_id)
-            tracker_class_mask = tracker_class_mask.astype(np.bool)
+            tracker_class_mask = tracker_class_mask.astype(bool)
             tracker_ids = raw_data['tracker_ids'][t][tracker_class_mask]
             tracker_dets = raw_data['tracker_dets'][t][tracker_class_mask]
             tracker_confidences = raw_data['tracker_confidences'][t][tracker_class_mask]
