@@ -1,4 +1,5 @@
 from .kitti_2d_box import Kitti2DBox
+from .kitti_2d_box_fairmot_multiclass import Kitti2DBoxFairMOTMulticlass
 from .kitti_mots import KittiMOTS
 from .mot_challenge_2d_box import MotChallenge2DBox
 from .mot_challenge_2d_box_fairmot_multiclass import MotChallenge2DBoxFairMOTMulticlass
