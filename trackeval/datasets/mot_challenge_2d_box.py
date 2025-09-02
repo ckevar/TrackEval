@@ -68,17 +68,7 @@ class MotChallenge2DBox(_BaseDataset):
         self.output_sub_fol = self.config['OUTPUT_SUB_FOLDER']
 
         # Get classes to eval
-        """ Legacy
         self.valid_classes = ['pedestrian']
-        """
-        self.valid_classes = ['pedestrian', 
-                              'person_on_vehicle', 
-                              'car', 
-                              'bicycle', 
-                              'motorbike', 
-                              'static_person',
-                              'crowd']
-        
         self.class_list = [cls.lower() if cls.lower() in self.valid_classes else None
                            for cls in self.config['CLASSES_TO_EVAL']]
         
