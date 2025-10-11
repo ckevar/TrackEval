@@ -440,14 +440,16 @@ class MotChallenge2DBoxFairMOTMulticlass(_BaseDataset):
             for t in range(raw_data['num_timesteps']):
                 if len(data['gt_ids'][t]) > 0:
                     data['gt_ids'][t] = gt_id_map[data['gt_ids'][t]].astype(int)
+
         if len(unique_tracker_ids) > 0:
             unique_tracker_ids = np.unique(unique_tracker_ids)
             tracker_id_map = np.nan * np.ones((np.max(unique_tracker_ids) + 1))
             tracker_id_map[unique_tracker_ids] = np.arange(len(unique_tracker_ids))
+
             for t in range(raw_data['num_timesteps']):
                 if len(data['tracker_ids'][t]) > 0:
                     data['tracker_ids'][t] = tracker_id_map[data['tracker_ids'][t]].astype(int)
-
+            
         # Record overview statistics.
         data['num_tracker_dets'] = num_tracker_dets
         data['num_gt_dets'] = num_gt_dets
@@ -455,6 +457,8 @@ class MotChallenge2DBoxFairMOTMulticlass(_BaseDataset):
         data['num_gt_ids'] = len(unique_gt_ids)
         data['num_timesteps'] = raw_data['num_timesteps']
         data['seq'] = raw_data['seq']
+        data['class_name'] = cls
+        data['tracker_id_map'] = unique_tracker_ids
 
         # Ensure again that ids are unique per timestep after preproc.
         self._check_unique_ids(data, after_preproc=True)

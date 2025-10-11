@@ -1,3 +1,6 @@
+dataset="$1"
+experiment_name="$2"
+
 eval_mot17() {
   EXPERIMENT_DIR="$1"
   python3 scripts/run_mot_challenge_fairmot_multiclass.py \
@@ -33,6 +36,14 @@ eval_waymov2mot() {
     --SKIP_SPLIT_FOL True
 }
 
+if [ "mot17" = "$dataset" ];then
+  eval_mot17 "$experiment_name"
+elif [ "kitti" = "$dataset"]; then
+  eval_kitti "$experiment_name"
+elif [ "waymov2" = "$dataset" ];then
+  eval_waymov2mot "$experiment_name"
+fi
+
 #eval_mot17 "fairmot_mot17_baseline"
 #eval_kitti "fairmot_kitti_baseline"
 #eval_waymov2mot "fairmot_waymoV2Mot_baseline"
@@ -54,11 +65,12 @@ eval_waymov2mot() {
 #eval_kitti "ucmctrack_kitti_baseline"
 #eval_waymov2mot "ucmctrack_waymoV2Mot_baseline"
 #eval_mot17 "fairmot_mot17_dla34_tuned"
-#eval_mot17 "fairmot_mot17_dla34_tuned_model30"
 #eval_kitti "fairmot_kitti_dla34_tuned"
 #eval_mot17 "boosttrack_mot17_baseline"
 #eval_kitti "boosttrack_kitti_baseline"
 #eval_waymov2mot "boosttrack_waymoV2Mot_baseline"
 #eval_mot17 "ablation_mot17"
 #eval_kitti "ablation_kitti"
-eval_waymov2mot "ablation_waymoV2Mot"
+#eval_waymov2mot "ablation_waymoV2Mot"
+#eval_kitti "test"
+

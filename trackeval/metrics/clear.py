@@ -5,6 +5,14 @@ from ._base_metric import _BaseMetric
 from .. import _timing
 from .. import utils
 
+class IDsw:
+    UNKNOWN = "unknown"
+    PROXIMITY = "proximity"
+    EARLY_TERMINATION = "early_termination"
+    GENERIC_MISASSOCIATION = "generic_misassociation"
+    GLITCH = "glitch"
+
+
 class CLEAR(_BaseMetric):
     """Class which implements the CLEAR metrics"""
 
@@ -37,6 +45,14 @@ class CLEAR(_BaseMetric):
     @_timing.time
     def eval_sequence(self, data):
         """Calculates CLEAR metrics for one sequence"""
+        # idsw type
+        idsw_unknown = 0
+        idsw_proximity = 0
+        idsw_earlyTermination = 0
+        idsw_misassociation = 0
+        idsw_glitch = 0
+        idsw_diagnosis = ""
+
         # Initialise results
         res = {}
         for field in self.fields:
@@ -92,9 +108,48 @@ class CLEAR(_BaseMetric):
 
             # Calc IDSW for MOTA
             prev_matched_tracker_ids = prev_tracker_id[matched_gt_ids]
-            is_idsw = (np.logical_not(np.isnan(prev_matched_tracker_ids))) & (
-                np.not_equal(matched_tracker_ids, prev_matched_tracker_ids))
-            res['IDSW'] += np.sum(is_idsw)
+            not_equal = np.not_equal(matched_tracker_ids, prev_matched_tracker_ids)
+            not_nan = np.logical_not(np.isnan(prev_matched_tracker_ids))
+            is_idsw = not_nan & not_equal
+            np_sum = np.sum(is_idsw)
+
+            # NOTE - HUNTING IDswtiches: {
+            if np_sum > 0:
+                lost_by = prev_matched_tracker_ids[is_idsw]
+                gain_by = matched_tracker_ids[is_idsw]
+
+                for l, g in zip(lost_by, gain_by):
+                    if g not in prev_matched_tracker_ids:
+                        if g > latest_id_added:
+                            # New tracker has been created
+                            idsw_earlyTermination += 1
+                            idsw_type = IDsw.EARLY_TERMINATION
+                        else:
+                            # For some reason the one gain the id was not tracked
+                            # It's kind of an early termination but with a twist 
+                            # because the borrower already existed in the past.
+                            # It could be one frame of undetection
+                            idsw_type = IDsw.GLITCH
+                            idsw_glitch += 1
+
+                    elif g in prev_timestep_tracker_id or l in matched_tracker_ids:
+                        idsw_proximity += 1
+                        idsw_type = IDsw.PROXIMITY
+
+                    else:
+                        idsw_unknown += 1
+                        idsw_type = IDsw.UNKNOWN
+
+                    l = data['tracker_id_map'][int(l)]
+                    g = data['tracker_id_map'][g]
+                    idsw_log = f"{t+1},{idsw_type},{idsw_unknown},{idsw_proximity},{idsw_earlyTermination},{idsw_misassociation},{l},{g}\n"
+                    idsw_diagnosis += idsw_log
+
+                #exit(1)
+
+            latest_id_added = max(prev_tracker_id)
+            # End NOTE
+            res['IDSW'] += np_sum
 
             # Update counters for MT/ML/PT/Frag and record for IDSW/Frag for next timestep
             gt_id_count[gt_ids_t] += 1
@@ -126,6 +181,9 @@ class CLEAR(_BaseMetric):
 
         # Calculate final CLEAR scores
         res = self._compute_final_fields(res)
+        # Save IDsw diagnosis
+        with open(f"idsw_diagnoises_{data['seq']}_{data['class_name']}.txt", 'w') as fd:
+            fd.write(idsw_diagnosis)
         return res
 
     def combine_sequences(self, all_res):
